@@ -22,11 +22,12 @@ DispatchAPI.test("dispatch_data_t deallocator") {
 	let q = DispatchQueue(label: "dealloc queue")
 	var t = 0
 
-	autoreleasepool {
+	do {
 		let size = 1024
 		let p = UnsafeMutablePointer<UInt8>.allocate(capacity: size)
 		let _ = DispatchData(bytesNoCopy: UnsafeBufferPointer(start: p, count: size), deallocator: .custom(q, {
 			t = 1
+			p.deallocate();
 		}))
 	}
 

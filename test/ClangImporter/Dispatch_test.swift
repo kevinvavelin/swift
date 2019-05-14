@@ -1,6 +1,7 @@
 // RUN: %target-typecheck-verify-swift
 
 // REQUIRES: libdispatch
+// XFAIL: OS=linux-gnu
 
 import Dispatch
 

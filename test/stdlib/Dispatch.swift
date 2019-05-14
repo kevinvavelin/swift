@@ -1,6 +1,7 @@
 // RUN: %target-run-simple-swift
 // REQUIRES: executable_test
 // REQUIRES: libdispatch
+// XFAIL: OS=linux-gnu
 
 import Dispatch
 import StdlibUnittest
