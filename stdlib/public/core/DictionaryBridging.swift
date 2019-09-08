@@ -313,7 +313,6 @@ final internal class _SwiftDeferredNSDictionary<Key: Hashable, Value>
     let bridgedKeys = bridgeKeys()
     let bridgedValues = bridgeValues()
     var i = 0 // Current position in the output buffers
-    let bucketCount = native._storage._bucketCount
 
     defer { _fixLifetime(self) }
 
@@ -424,7 +423,7 @@ final internal class _SwiftDeferredNSDictionary<Key: Hashable, Value>
 // classes, so it was renamed. The old names must not be used in the new
 // runtime.
 @usableFromInline
-@_fixed_layout
+@frozen
 internal struct __CocoaDictionary {
   @usableFromInline
   internal let object: AnyObject
@@ -567,7 +566,7 @@ extension __CocoaDictionary {
 }
 
 extension __CocoaDictionary {
-  @_fixed_layout
+  @frozen
   @usableFromInline
   internal struct Index {
     internal var _storage: Builtin.BridgeObject

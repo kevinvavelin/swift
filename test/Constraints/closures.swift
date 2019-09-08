@@ -37,18 +37,18 @@ func inoutToSharedConversions() {
   fooOW({ (x : Int) in return Int(5) }) // defaut-to-'__owned' allowed
   fooOW({ (x : __owned Int) in return Int(5) }) // '__owned'-to-'__owned' allowed
   fooOW({ (x : __shared Int) in return Int(5) }) // '__shared'-to-'__owned' allowed
-  fooOW({ (x : inout Int) in return Int(5) }) // expected-error {{cannot convert value of type '(inout Int) -> Int' to expected argument type '(__owned _) -> _'}}
+  fooOW({ (x : inout Int) in return Int(5) }) // expected-error {{cannot convert value of type '(inout Int) -> Int' to expected argument type '(__owned Int) -> Int'}}
   
   func fooIO<T, U>(_ f : (inout T) -> U) {}
   fooIO({ (x : inout Int) in return Int(5) }) // 'inout'-to-'inout' allowed
-  fooIO({ (x : Int) in return Int(5) }) // expected-error {{cannot convert value of type '(inout Int) -> Int' to expected argument type '(inout _) -> _'}}
-  fooIO({ (x : __shared Int) in return Int(5) }) // expected-error {{cannot convert value of type '(__shared Int) -> Int' to expected argument type '(inout _) -> _'}}
-  fooIO({ (x : __owned Int) in return Int(5) }) // expected-error {{cannot convert value of type '(__owned Int) -> Int' to expected argument type '(inout _) -> _'}}
+  fooIO({ (x : Int) in return Int(5) }) // expected-error {{cannot convert value of type '(Int) -> Int' to expected argument type '(inout Int) -> Int'}}
+  fooIO({ (x : __shared Int) in return Int(5) }) // expected-error {{cannot convert value of type '(__shared Int) -> Int' to expected argument type '(inout Int) -> Int'}}
+  fooIO({ (x : __owned Int) in return Int(5) }) // expected-error {{cannot convert value of type '(__owned Int) -> Int' to expected argument type '(inout Int) -> Int'}}
 
   func fooSH<T, U>(_ f : (__shared T) -> U) {}
   fooSH({ (x : __shared Int) in return Int(5) }) // '__shared'-to-'__shared' allowed
   fooSH({ (x : __owned Int) in return Int(5) }) // '__owned'-to-'__shared' allowed
-  fooSH({ (x : inout Int) in return Int(5) }) // expected-error {{cannot convert value of type '(inout Int) -> Int' to expected argument type '(__shared _) -> _'}}
+  fooSH({ (x : inout Int) in return Int(5) }) // expected-error {{cannot convert value of type '(inout Int) -> Int' to expected argument type '(__shared Int) -> Int'}}
   fooSH({ (x : Int) in return Int(5) }) // default-to-'__shared' allowed
 }
 
@@ -182,8 +182,7 @@ func r22162441(_ lines: [String]) {
 
 func testMap() {
   let a = 42
-  [1,a].map { $0 + 1.0 } // expected-error {{binary operator '+' cannot be applied to operands of type 'Int' and 'Double'}}
-  // expected-note @-1 {{overloads for '+' exist with these partially matching parameter lists: }}
+  [1,a].map { $0 + 1.0 } // expected-error {{cannot convert value of type 'Int' to expected element type 'Double'}}
 }
 
 // <rdar://problem/22414757> "UnresolvedDot" "in wrong phase" assertion from verifier
@@ -475,7 +474,7 @@ func g_2994(arg: Int) -> Double {
 }
 C_2994<S_2994>(arg: { (r: S_2994) in f_2994(arg: g_2994(arg: r.dataOffset)) }) // expected-error {{cannot convert value of type 'Double' to expected argument type 'String'}}
 
-let _ = { $0[$1] }(1, 1) // expected-error {{cannot subscript a value of incorrect or ambiguous type}}
+let _ = { $0[$1] }(1, 1) // expected-error {{value of type 'Int' has no subscripts}}
 let _ = { $0 = ($0 = {}) } // expected-error {{assigning a variable to itself}}
 let _ = { $0 = $0 = 42 } // expected-error {{assigning a variable to itself}}
 
@@ -716,7 +715,7 @@ func rdar37790062() {
 }
 
 // <rdar://problem/39489003>
-typealias KeyedItem<K, T> = (key: K, value: T)
+typealias KeyedItem<K, T> = (key: K, value: T) // expected-note {{'T' declared as parameter to type 'KeyedItem'}}
 
 protocol Node {
   associatedtype T
@@ -730,8 +729,7 @@ extension Node {
   func getChild(for key:K)->(key: K, value: T) {
     return children.first(where: { (item:KeyedItem) -> Bool in
         return item.key == key
-        // expected-error@-1 {{binary operator '==' cannot be applied to operands of type '_' and 'Self.K'}}
-        // expected-note@-2 {{overloads for '==' exist with these partially matching parameter lists:}}
+        // expected-error@-1 {{generic parameter 'T' could not be inferred}}
       })!
   }
 }
@@ -814,13 +812,15 @@ func rdar_40537960() {
     init(_: P_40537960) {}
   }
 
-  struct A<T: Collection, P: P_40537960> {
+  struct A<T: Collection, P: P_40537960> { // expected-note {{'P' declared as parameter to type 'A'}}
     typealias Data = T.Element
     init(_: T, fn: (Data) -> R<P>) {}
   }
 
   var arr: [S] = []
-  _ = A(arr, fn: { L($0.v) }) // expected-error {{cannot convert value of type 'L' to closure result type 'R<T>'}}
+  _ = A(arr, fn: { L($0.v) }) // expected-error {{cannot convert value of type 'L' to closure result type 'R<Any>'}}
+  // expected-error@-1 {{generic parameter 'P' could not be inferred}}
+  // expected-note@-2 {{explicitly specify the generic arguments to fix this issue}} {{8-8=<[S], <#P: P_40537960#>>}}
 }
 
 // rdar://problem/45659733
@@ -862,8 +862,8 @@ func rdar45771997() {
 struct rdar30347997 {
   func withUnsafeMutableBufferPointer(body : (inout Int) -> ()) {}
   func foo() {
-    withUnsafeMutableBufferPointer {
-      (b : Int) in // expected-error {{'Int' is not convertible to 'inout Int'}}
+    withUnsafeMutableBufferPointer { // expected-error {{cannot convert value of type '(Int) -> ()' to expected argument type '(inout Int) -> ()'}}
+      (b : Int) in
     }
   }
 }

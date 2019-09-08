@@ -132,6 +132,8 @@ PASS(DeadObjectElimination, "deadobject-elim",
      "Dead Object Elimination for Classes with Trivial Destruction")
 PASS(DefiniteInitialization, "definite-init",
      "Definite Initialization for Diagnostics")
+PASS(DestroyHoisting, "destroy-hoisting",
+     "Hoisting of value destroys")
 PASS(Devirtualizer, "devirtualizer",
      "Indirect Call Devirtualization")
 PASS(DiagnoseInfiniteRecursion, "diagnose-infinite-recursion",
@@ -309,6 +311,9 @@ PASS(SerializeSILPass, "serialize-sil",
      "Utility pass. Serializes the current SILModule")
 PASS(YieldOnceCheck, "yield-once-check",
     "Check correct usage of yields in yield-once coroutines")
+PASS(OSLogOptimization, "os-log-optimization", "Optimize os log calls")
+PASS(MandatoryCombine, "mandatory-combine",
+    "Perform mandatory peephole combines")
 PASS(BugReducerTester, "bug-reducer-tester",
      "sil-bug-reducer Tool Testing by Asserting on a Sentinel Function")
 PASS_RANGE(AllPasses, AADumper, BugReducerTester)

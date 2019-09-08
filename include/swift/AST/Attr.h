@@ -101,10 +101,10 @@ public:
     AttrLocs[A] = L;
   }
 
-  void getAttrRanges(SmallVectorImpl<SourceRange> &Ranges) const {
+  void getAttrLocs(SmallVectorImpl<SourceLoc> &Locs) const {
     for (auto Loc : AttrLocs) {
       if (Loc.isValid())
-        Ranges.push_back(Loc);
+        Locs.push_back(Loc);
     }
   }
 
@@ -258,11 +258,9 @@ protected:
       ownership : NumReferenceOwnershipBits
     );
 
-    SWIFT_INLINE_BITFIELD_FULL(SpecializeAttr, DeclAttribute, 1+1+32,
+    SWIFT_INLINE_BITFIELD(SpecializeAttr, DeclAttribute, 1+1,
       exported : 1,
-      kind : 1,
-      : NumPadBits,
-      numRequirements : 32
+      kind : 1
     );
 
     SWIFT_INLINE_BITFIELD(SynthesizedProtocolAttr, DeclAttribute,
@@ -1236,39 +1234,29 @@ public:
 
 private:
   TrailingWhereClause *trailingWhereClause;
-
-  Requirement *getRequirementsData() {
-    return reinterpret_cast<Requirement *>(this+1);
-  }
+  GenericSignature *specializedSignature;
 
   SpecializeAttr(SourceLoc atLoc, SourceRange Range,
                  TrailingWhereClause *clause, bool exported,
-                 SpecializationKind kind);
-
-  SpecializeAttr(SourceLoc atLoc, SourceRange Range,
-                 ArrayRef<Requirement> requirements,
-                 bool exported,
-                 SpecializationKind kind);
+                 SpecializationKind kind,
+                 GenericSignature *specializedSignature);
 
 public:
   static SpecializeAttr *create(ASTContext &Ctx, SourceLoc atLoc,
                                 SourceRange Range, TrailingWhereClause *clause,
-                                bool exported, SpecializationKind kind);
-
-  static SpecializeAttr *create(ASTContext &Ctx, SourceLoc atLoc,
-                                SourceRange Range,
-                                ArrayRef<Requirement> requirement,
-                                bool exported, SpecializationKind kind);
+                                bool exported, SpecializationKind kind,
+                                GenericSignature *specializedSignature
+                                    = nullptr);
 
   TrailingWhereClause *getTrailingWhereClause() const;
 
-  ArrayRef<Requirement> getRequirements() const;
-
-  MutableArrayRef<Requirement> getRequirements() {
-    return { getRequirementsData(), Bits.SpecializeAttr.numRequirements };
+  GenericSignature *getSpecializedSgnature() const {
+    return specializedSignature;
   }
 
-  void setRequirements(ASTContext &Ctx, ArrayRef<Requirement> requirements);
+  void setSpecializedSignature(GenericSignature *newSig) {
+    specializedSignature = newSig;
+  }
 
   bool isExported() const {
     return Bits.SpecializeAttr.exported;
@@ -1321,7 +1309,7 @@ public:
   }
 };
 
-/// A limited variant of \c @objc that's used for classes with generic ancestry.
+/// A limited variant of \c \@objc that's used for classes with generic ancestry.
 class ObjCRuntimeNameAttr : public DeclAttribute {
   static StringRef getSimpleName(const ObjCAttr &Original) {
     assert(Original.hasName());
@@ -1474,6 +1462,31 @@ public:
   }
 };
 
+/// Relates a property to its projection value property, as described by a property wrapper. For
+/// example, given
+/// \code
+/// @A var foo: Int
+/// \endcode
+///
+/// Where \c A is a property wrapper that has a \c projectedValue property, the compiler
+/// synthesizes a declaration $foo an attaches the attribute
+/// \c _projectedValuePropertyAttr($foo) to \c foo to record the link.
+class ProjectedValuePropertyAttr : public DeclAttribute {
+public:
+  ProjectedValuePropertyAttr(Identifier PropertyName,
+                              SourceLoc AtLoc, SourceRange Range,
+                              bool Implicit)
+    : DeclAttribute(DAK_ProjectedValueProperty, AtLoc, Range, Implicit),
+      ProjectionPropertyName(PropertyName) {}
+
+  // The projection property name.
+  const Identifier ProjectionPropertyName;
+
+  static bool classof(const DeclAttribute *DA) {
+    return DA->getKind() == DAK_ProjectedValueProperty;
+  }
+};
+
 /// Attributes that may be applied to declarations.
 class DeclAttributes {
   /// Linked list of declaration attributes.
@@ -1528,6 +1541,9 @@ public:
   void dump(const Decl *D = nullptr) const;
   void print(ASTPrinter &Printer, const PrintOptions &Options,
              const Decl *D = nullptr) const;
+  static void print(ASTPrinter &Printer, const PrintOptions &Options,
+                    ArrayRef<const DeclAttribute *> FlattenedAttrs,
+                    const Decl *D = nullptr);
 
   template <typename T, typename DERIVED>
   class iterator_base : public std::iterator<std::forward_iterator_tag, T *> {
@@ -1651,6 +1667,10 @@ public:
 };
 
 void simple_display(llvm::raw_ostream &out, const DeclAttribute *attr);
+
+inline SourceLoc extractNearestSourceLoc(const DeclAttribute *attr) {
+  return attr->getLocation();
+}
 
 } // end namespace swift
 

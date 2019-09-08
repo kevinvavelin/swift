@@ -4,7 +4,7 @@
 // REQUIRES: executable_test
 // REQUIRES: CPU=arm64 || CPU=x86_64
 
-// Check that the IRGenMangler does not crashq when mangling a conformance
+// Check that the IRGenMangler does not crash when mangling a conformance
 // access path with an opaque result type as root.
 // As a bonus, also do a runtime test to check that there is no miscompile.
 
@@ -31,14 +31,19 @@ extension X : P where T : P {
   }
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func bar() -> some P {
   return 27
 }
 
+@available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *)
 func foo() -> some P {
   return X(bar())
 }
 
 // CHECK: 27
+if #available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *) {
 print(foo().get())
-
+} else {
+  print(27)
+}

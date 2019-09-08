@@ -292,12 +292,14 @@ struct PrintOptions {
   /// List of attribute kinds that should not be printed.
   std::vector<AnyAttrKind> ExcludeAttrList = {DAK_Transparent, DAK_Effects,
                                               DAK_FixedLayout,
-                                              DAK_ShowInInterface,
-                                              DAK_ImplicitlyUnwrappedOptional};
+                                              DAK_ShowInInterface};
 
   /// List of attribute kinds that should be printed exclusively.
   /// Empty means allow all.
   std::vector<AnyAttrKind> ExclusiveAttrList;
+
+  /// List of decls that should be printed even if they are implicit and \c SkipImplicit is set to true.
+  std::vector<const Decl*> TreatAsExplicitDeclList;
 
   /// Whether to print function @convention attribute on function types.
   bool PrintFunctionRepresentationAttrs = true;
@@ -349,7 +351,7 @@ struct PrintOptions {
 
   /// Whether to print the doc-comment from the conformance if a member decl
   /// has no associated doc-comment by itself.
-  bool ElevateDocCommentFromConformance = false;
+  bool CascadeDocComment = false;
 
   /// Whether to print the content of an extension decl inside the type decl where it
   /// extends from.
@@ -480,7 +482,7 @@ struct PrintOptions {
     result.SkipDeinit = true;
     result.ExcludeAttrList.push_back(DAK_DiscardableResult);
     result.EmptyLineBetweenMembers = true;
-    result.ElevateDocCommentFromConformance = true;
+    result.CascadeDocComment = true;
     result.ShouldQualifyNestedDeclarations =
         QualifyNestedDeclarations::Always;
     result.PrintDocumentationComments = true;
@@ -494,7 +496,7 @@ struct PrintOptions {
   /// consistent and well-formed.
   ///
   /// \see swift::emitParseableInterface
-  static PrintOptions printParseableInterfaceFile();
+  static PrintOptions printParseableInterfaceFile(bool preferTypeRepr);
 
   static PrintOptions printModuleInterface();
   static PrintOptions printTypeInterface(Type T);
@@ -505,10 +507,10 @@ struct PrintOptions {
 
   void clearSynthesizedExtension();
 
-  bool shouldPrint(const Decl* D) {
+  bool shouldPrint(const Decl* D) const {
     return CurrentPrintabilityChecker->shouldPrint(D, *this);
   }
-  bool shouldPrint(const Pattern* P) {
+  bool shouldPrint(const Pattern* P) const {
     return CurrentPrintabilityChecker->shouldPrint(P, *this);
   }
 

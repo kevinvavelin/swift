@@ -370,6 +370,8 @@ func statementTests() {
 
   guard let a = b else {}
 
+  guard let self = self else {}
+
   for var i in foo where i.foo {}
   for case is Int in foo {}
 
@@ -576,3 +578,9 @@ func foo() {}
 @custom(A: a, B: b, C:c)
 func foo() {}
 
+"abc"
+"abc \(foo)"
+#"abc"#
+#"abc \#(foo)"#
+##"abc"##
+##"abc \##(foo)"##

@@ -11,7 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "swift/Serialization/SerializedModuleLoader.h"
-#include "swift/Serialization/ModuleFile.h"
+#include "ModuleFile.h"
 #include "swift/AST/ASTContext.h"
 #include "swift/AST/DiagnosticsSema.h"
 #include "swift/Basic/Defer.h"
@@ -230,6 +230,7 @@ void SerializedModuleLoaderBase::collectVisibleTopLevelModuleNamesImpl(
       return None;
     }
     }
+    llvm_unreachable("covered switch");
   });
 }
 
@@ -474,6 +475,7 @@ SerializedModuleLoaderBase::findModule(AccessPathElem moduleID,
           return findTargetSpecificModuleFiles();
         }
         }
+        llvm_unreachable("covered switch");
       });
   return result.getValueOr(false);
 }
@@ -546,7 +548,6 @@ FileUnit *SerializedModuleLoaderBase::loadAST(
     // We've loaded the file. Now try to bring it into the AST.
     auto fileUnit = new (Ctx) SerializedASTFile(M, *loadedModuleFile,
                                                 extendedInfo.isSIB());
-    fileUnit->setParseableInterface(extendedInfo.getParseableInterface());
     M.addFile(*fileUnit);
     if (extendedInfo.isTestable())
       M.setTestingEnabled();
@@ -718,7 +719,8 @@ void swift::serialization::diagnoseSerializedASTLoadFailure(
   case serialization::Status::FailedToLoadBridgingHeader:
     // We already emitted a diagnostic about the bridging header. Just emit
     // a generic message here.
-    Ctx.Diags.diagnose(diagLoc, diag::serialization_load_failed, ModuleName);
+    Ctx.Diags.diagnose(diagLoc, diag::serialization_load_failed,
+                       ModuleName.str());
     break;
 
   case serialization::Status::NameMismatch: {
@@ -951,6 +953,11 @@ void SerializedASTFile::lookupValue(ModuleDecl::AccessPathTy accessPath,
     return;
   
   File.lookupValue(name, results);
+}
+
+StringRef
+SerializedASTFile::getFilenameForPrivateDecl(const ValueDecl *decl) const {
+  return File.FilenamesForPrivateValues.lookup(decl);
 }
 
 TypeDecl *SerializedASTFile::lookupLocalType(llvm::StringRef MangledName) const{

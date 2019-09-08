@@ -179,6 +179,7 @@ testSuite.test("GenericMangled")
                 reason: "objc_getClass hook not present"))
   .requireOwnProcess()
   .code {
+  guard #available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *) else { return }
   requireClass(named:   "_TtC4main24ConstrainedSwiftSubclass",
                demangledName: "main.ConstrainedSwiftSubclass")
   requireClass(named:   "_TtC4main26ConstrainedSwiftSuperclass",
@@ -225,6 +226,7 @@ testSuite.test("ResilientNSObject")
                 reason: "objc_getClass hook not present"))
   .requireOwnProcess()
   .code {
+  guard #available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *) else { return }
   requireClass(named: "_TtC4main27ResilientSubclassOfNSObject",
                demangledName: "main.ResilientSubclassOfNSObject")
   requireClass(named: "_TtC4main34ResilientSubclassOfGenericNSObject",
@@ -246,6 +248,12 @@ testSuite.test("NotPresent") {
 
   // Swift.Int is not a class type.
   expectNil(NSClassFromString("Si"))
+
+  // Mangled names with byte sequences that look like symbolic references
+  // should not be demangled.
+  expectNil(NSClassFromString("\u{1}badnews"));
+  expectNil(NSClassFromString("$s\u{1}badnews"));
+  expectNil(NSClassFromString("_T\u{1}badnews"));
 }
 
 runAllTests()

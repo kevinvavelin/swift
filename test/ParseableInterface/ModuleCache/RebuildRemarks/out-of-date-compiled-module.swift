@@ -10,8 +10,11 @@
 // 3. Build the .swiftinterface to a .swiftmodule, which will have a dependency on the interface
 // RUN: %target-swift-frontend -compile-module-from-interface -o %t/Build/TestModule.swiftmodule %t/Build/TestModule.swiftinterface
 
+// 3a. Make sure the test works on a fast machine
+// RUN: sleep 1
+
 // 4. Touch the interface so the module is no longer up-to-date
-// RUN: touch %t/Build/TestModule.swiftinterface
+// RUN: %{python} %S/../Inputs/make-old.py %t/Build/TestModule.swiftinterface
 
 // 5. Try to import the out-of-date compiled module
 // RUN: %target-swift-frontend -typecheck -verify %s -I %t/Build -Rmodule-interface-rebuild -module-cache-path %t/ModuleCache
